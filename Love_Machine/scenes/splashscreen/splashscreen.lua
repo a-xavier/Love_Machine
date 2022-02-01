@@ -5,17 +5,14 @@ splashscreen = {}
 function splashscreen:init()
 	self.splash = o_ten_one.new({fill='lighten', delay_after=1})
 	self.splash.onDone = function() gamestate.switch(titlescreen) end
-	self.bgm = love.audio.newSource( "scenes/splashscreen/sound/loop_intro_lofi.ogg", 'static' )
+	self.bgm = love.audio.newSource( "scenes/splashscreen/sound/loop_intro_lofi.ogg", 'stream' )
 	self.bgm:setLooping(true)
-	
+
 	--Handle resolution
 	w, h = love.graphics.getDimensions()
 	self.aspect_ratio = require('libs/AspectRatio')
 	self.aspect_ratio:init(w, h, global_width, global_height)
 	self.canvas =  love.graphics.newCanvas(self.aspect_ratio.dig_w, self.aspect_ratio.dig_h)
-	
-	
-
 end
 
 function splashscreen:update(dt)

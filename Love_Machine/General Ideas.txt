@@ -1,3 +1,0 @@
---> Add Avatars for players
---> To avoid lagging the first time a scene loads -> add after the splashscreen a scene named loadscene where we generate a mega global array containing all big ressources (like audio) then ffrom each scene we reference those like megaarray.boomsound or megaarray[23]
---> Add a unique selectable minigame.

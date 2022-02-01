@@ -1,10 +1,14 @@
 minigame_8 = {}
-local Player = require "scenes.minigame_8.entities.player"
-local Conductor = require "scenes.minigame_8.entities.conductor"
+
 
 function minigame_8:init()
+	local Player = require "scenes.minigame_8.entities.player"
+	local Conductor = require "scenes.minigame_8.entities.conductor"
+
 	self.scene_type = "game"
 	self.scene_name = "Dancefloor"
+
+	self.delay_timer = 0
 
 	self.frame = 1
 
@@ -21,14 +25,20 @@ function minigame_8:init()
 	self.canvas =  love.graphics.newCanvas(self.aspect_ratio.dig_w, self.aspect_ratio.dig_h)
 
 	--Music
+	math.randomseed(os.time())
 	self.music = {}
-	self.music.bg_music = love.audio.newSource( "scenes/minigame_8/sound/minigame_dance_final.ogg", "static")
+	local choice = math.random(1,3)
+	self.music_choice = {love.audio.newSource( "scenes/minigame_8/sound/minigame_dance_final.ogg", "stream"),
+						 love.audio.newSource( "scenes/minigame_8/sound/boomboom.ogg", "stream"),
+						 love.audio.newSource( "scenes/minigame_8/sound/letsgo.ogg", "stream")}
+	self.bpm_choice = {120, 100, 130}
+	self.music.bg_music = self.music_choice[choice]
 	--Volume a bit down
 	self.music.volume = 0.75
 	self.music.bg_music:setVolume(self.music.volume)
-	self.music.bpm = 120
-	self.music.bar_timer = self.music.bpm/60
-	self.music.beat_timer = self.music.bpm/60/4
+	self.music.bpm = self.bpm_choice[choice]
+	self.music.bar_timer = (60 / self.music.bpm) * 4
+	self.music.beat_timer = 60 / self.music.bpm
 	self.music.bar_num = 1
 	self.music.beat_num = 1
 	self.music.beat_signal = false
@@ -37,6 +47,7 @@ function minigame_8:init()
 	self.music.alpha_timer = 0
 	self.music.color = {r=1,g = 1, b = 1}
 	self.music.outro = love.audio.newSource( "scenes/minigame_8/sound/outro_clap.ogg", "static")
+	self.music.length = self.music.bg_music:getDuration( "seconds" )
 
 	--COnductor
 	self.conductor = Conductor(global_width/2 - 100, 50)
@@ -54,26 +65,49 @@ function minigame_8:init()
 	self.outro_timer = 0
 	self.outro_timer_max = 7
 	--Win-lose
-	self.target_points = 46 --should be divisible by 4/8
+	self.target_points = 24 -- 48 --should be divisible by 4/8
 
 	self.winner = nil
 	self.counted_score = {p1 = false, p2 = false}
 end
 
 function minigame_8:update(dt)
+	--BEFORE EVERYTHING
+self.delay_timer = self.delay_timer + dt
+--prevents initial desync
+if self.delay_timer >= 1 then
+
 	--FRAME COUNTER
 	self.frame = self.frame + 1
 
 	-- Play music all the timer
 	self.music.bg_music:play()
 	self.music.pos = self.music.bg_music:tell( "seconds" )
+
+	--set proper looping
+	if self.music.bar_num == math.floor(self.music.length/self.music.bar_timer) + 1 then
+		self.music.bg_music:seek(0)
+		self.music.bar_num = 1
+		self.music.beat_num = 1
+		self.music.alpha_timer = 0
+	end
+
 	--Loop for flash
 	if self.music.bg_music:isPlaying() then
 		self.music.alpha_timer = self.music.alpha_timer + dt
 	end
 	if (self.music.alpha_timer >= self.music.beat_timer) then --good enough no sync with actual music timer
 		--update timer based on precise position?
-		self.music.alpha_timer = 0 --self.music.pos%self.music.beat_timer -- zero on precise remainder instead of  zero
+		local precise_timer = math.min((self.music.beat_timer - self.music.pos%self.music.beat_timer), self.music.pos%self.music.beat_timer) --if around 0.49, then alpha timer is in advance and if around 0 then alpha timer is late
+		-- IF a bit in advance
+		if (self.music.beat_timer - self.music.pos%self.music.beat_timer) < self.music.pos%self.music.beat_timer then
+			offset = -1 --go back
+		--if a little bit late
+		else
+			offset = 1 --advances
+		end
+		self.music.alpha_timer =  offset * precise_timer-- zero on precise remainder instead of  zero
+		--print(precise_timer)
 		self.music.beat_num = self.music.beat_num + 1
 		self.music.beat_signal = true
 		if self.music.beat_num > 4 then
@@ -166,6 +200,7 @@ function minigame_8:update(dt)
 		end
 	end
 end
+end -- END UPDATE
 
 function minigame_8:draw(dt)
 love.graphics.setCanvas(self.canvas)
@@ -211,6 +246,29 @@ love.graphics.setCanvas(self.canvas)
 				end
 		end
 
+		--SHOW
+
+		if self.phase == "show" then
+			--top Half illuminated
+			love.graphics.setColor(1,1,1, 0.5)
+			love.graphics.polygon("fill", self.conductor.x, 0,
+										  self.conductor.x + self.conductor.w, 0,
+										  self.conductor.x + self.conductor.w + 50, global_height/2,
+										  self.conductor.x - 50, global_height/2)
+			love.graphics.setColor(0,0,1)
+			love.graphics.setFont(self.font)
+			love.graphics.printf("WATCH",0, 0, global_width, "right")
+		end
+
+		if self.phase == "reproduce" then
+			--top Half illuminated
+			love.graphics.setColor(1,1,1, 0.5)
+			love.graphics.rectangle("fill", 0, global_height/2, global_width, global_height/2)
+			love.graphics.setColor(0,1,0)
+			love.graphics.setFont(self.font)
+			love.graphics.printf("DANCE", 0, global_height - self.font:getHeight() - 300, global_width, "center")
+		end
+
 
 
 		----- FINISH DRAWING ----
@@ -241,16 +299,21 @@ end
 function minigame_8:debug()
 
 -- additional debug
-	love.graphics.setColor(1, 1, 1)
-	love.graphics.setFont(default_font)
-	love.graphics.print(tostring(self.music.bar_num)..":"..tostring(self.music.beat_num), 10, 100)
-	love.graphics.print(self.phase, 10, 115)
-	love.graphics.print(tostring(self.player_2.current_input), 10, 130)
-	love.graphics.print(tostring(self.player_2.key_registered), 10, 145)
-	--self.no_input_timer
-	love.graphics.print(tostring(minigame_8.player_2.no_input_timer), 10, 160)
-	love.graphics.print(tostring(minigame_8.player_2.current_input_index), 10, 175)
-	love.graphics.print(tostring(self.music.pos%self.music.beat_timer), 10, 190)
+	if global_debug then
+		love.graphics.setColor(1, 1, 1)
+		love.graphics.setFont(default_font)
+		love.graphics.print(tostring(self.music.bar_num)..":"..tostring(self.music.beat_num), 10, 100)
+		love.graphics.print(self.phase, 10, 115)
+		love.graphics.print(tostring(self.player_2.current_input), 10, 130)
+		love.graphics.print(tostring(self.player_2.key_registered), 10, 145)
+		--self.no_input_timer
+		love.graphics.print(tostring(minigame_8.player_2.no_input_timer), 10, 160)
+		love.graphics.print(tostring(minigame_8.player_2.current_input_index), 10, 175)
+		if self.delay_timer >= 1 then
+			love.graphics.print(tostring(self.music.pos%self.music.beat_timer), 10, 190)
+			love.graphics.print(tostring(self.music.beat_timer), 10, 205)
+		end
+	end
 
 end
 
@@ -278,11 +341,12 @@ function minigame_8:resize(w, h)
 end
 
 function minigame_8:enter(previous)
-
+	self:init()
 end
 
 function minigame_8:leave()
 	love.audio.stop()
+	deep_release(self)
 end
 
 -- NEEDS TO BE AT THE VERY END

@@ -30,7 +30,7 @@ local function __NULL__() end
 local state_init = setmetatable({leave = __NULL__},
 		{__index = function() error("Gamestate not initialized. Use Gamestate.switch()") end})
 local stack = {state_init}
-local initialized_states = setmetatable({}, {__mode = "k"})
+local initialized_states = setmetatable({}, {__mode = "kv"}) --k
 local state_is_dirty = true
 
 local GS = {}
@@ -94,6 +94,16 @@ function GS.registerEvents(callbacks)
 			registry[f](...)
 			return GS[f](...)
 		end
+	end
+end
+
+--ME MADE
+function GS.show_stack()
+
+	print("Stack size = "..tostring(#stack))
+
+	for k, v in pairs(initialized_states) do
+		print("init "..tostring(v))
 	end
 end
 

@@ -1,12 +1,10 @@
-Class = require "libs.hump.class"
-
 Food = Class{
 	init = function(self, x, y, number)
 
 	--defines playable area
 	self.img = love.graphics.newImage( "scenes/minigame_4/img/Food_1_2.png")
 	self.x = x
-	self.y = y 
+	self.y = y
 	self.rot = 0
 	self.w = self.img:getWidth( )
 	self.h = self.img:getHeight( )

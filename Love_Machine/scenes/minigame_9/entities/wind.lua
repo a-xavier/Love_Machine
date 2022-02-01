@@ -2,11 +2,12 @@
 -- QUICK AND DIRTY CLASS?
 	math.randomseed(os.time())
 	wind = {}
+	local tween = require "libs.tween"
 	wind.img = love.graphics.newImage( "scenes/minigame_9/img/wind_speck.png")
 	direction_choice = {-1, 1}
 	wind.direction = direction_choice[math.random(2)] --either going to left or right
 	wind.speed = 200 -- math.random(100, 200)
-	wind.speck_number = 200
+	wind.speck_number = 50
 	wind.tween_holder = {}
 	wind.speck_holder = {}
 	if wind.direction == 1 then
@@ -49,7 +50,7 @@ math.randomseed(os.time())
 direction_choice = {-1, 1}
 	wind.direction = -wind.direction
 	wind.speed = math.random(100, 200)
-	wind.speck_number = 100
+	wind.speck_number = 50
 	wind.tween_holder = {}
 	wind.speck_holder = {}
 	if wind.direction == 1 then
